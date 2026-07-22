@@ -19,8 +19,12 @@ app.use(express.json());
 
 // Ensure uploads directory exists
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+} catch (error) {
+  console.warn('Could not create uploads directory (expected in serverless environments).');
 }
 app.use('/uploads', express.static(UPLOADS_DIR));
 
