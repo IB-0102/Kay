@@ -1,0 +1,16 @@
+require('dotenv').config();
+const { Pool } = require('pg');
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+async function run() {
+  try {
+    const { rows } = await pool.query('SELECT username FROM users');
+    console.log("Success", rows);
+  } catch(e) {
+    console.error("Error", e);
+  }
+  process.exit(0);
+}
+run();

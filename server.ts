@@ -7,7 +7,6 @@ import fs from 'fs';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { createServer as createViteServer } from 'vite';
 
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-development-only';
@@ -39,6 +38,7 @@ if (dbUrl && !dbUrl.startsWith('postgres://') && !dbUrl.startsWith('postgresql:/
 
 const pool = new Pool({
   connectionString: dbUrl,
+  ssl: { rejectUnauthorized: false }
 });
 
 // Authentication Middleware
@@ -89,6 +89,10 @@ app.post('/api/auth/change-password', authenticateToken, async (req: any, res: a
 });
 
 // --- Products ---
+app.get('/api/ping', (req, res) => {
+  res.json({ message: 'pong', vercel: process.env.VERCEL, dbUrl: !!process.env.DATABASE_URL });
+});
+
 app.get('/api/products', async (req, res) => {
   try {
     const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id DESC');
@@ -228,7 +232,8 @@ app.put('/api/content', authenticateToken, async (req, res) => {
 
 // Vite Development server integration
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
@@ -247,7 +252,8 @@ async function startServer() {
   });
 }
 
-if (!process.env.VERCEL) {
+const isVercel = process.env.VERCEL || process.env.VERCEL_ENV || process.env.NOW_REGION;
+if (!isVercel) {
   startServer();
 }
 
