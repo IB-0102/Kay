@@ -14,7 +14,23 @@ const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-development-only'
 // Initialize App
 const app = express();
 app.use(cors());
-app.use(express.json());
+
+// Fix for Netlify URL rewriting
+app.use((req, res, next) => {
+  if (req.url.startsWith('/.netlify/functions/api')) {
+    req.url = req.url.replace('/.netlify/functions/api', '/api');
+  }
+  next();
+});
+
+// Fix for Vercel/Netlify body parsing
+app.use((req: any, res: any, next: any) => {
+  if (req.body && typeof req.body === 'object' && Object.keys(req.body).length > 0) {
+    next(); 
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 // Ensure uploads directory exists
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
@@ -95,6 +111,7 @@ app.get('/api/ping', (req, res) => {
 
 app.get('/api/products', async (req, res) => {
   try {
+    if (!process.env.DATABASE_URL) return res.json([]);
     const { rows: products } = await pool.query('SELECT * FROM products ORDER BY id DESC');
     // Convert boolean ints to real booleans for frontend
     const formatted = products.map((p: any) => ({
@@ -252,8 +269,8 @@ async function startServer() {
   });
 }
 
-const isVercel = process.env.VERCEL || process.env.VERCEL_ENV || process.env.NOW_REGION;
-if (!isVercel) {
+const isServerless = process.env.VERCEL || process.env.VERCEL_ENV || process.env.NOW_REGION || process.env.NETLIFY;
+if (!isServerless) {
   startServer();
 }
 

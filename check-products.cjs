@@ -3,11 +3,7 @@ const { Pool } = require('pg');
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 async function run() {
   try {
-    const { rows } = await pool.query(`
-      SELECT column_name, data_type, character_maximum_length 
-      FROM information_schema.columns 
-      WHERE table_name = 'products';
-    `);
+    const { rows } = await pool.query('SELECT id, name, imageurl FROM products');
     console.log(rows);
   } catch(e) {
     console.error(e);
